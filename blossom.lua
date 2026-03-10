@@ -912,7 +912,7 @@ local function EnableFreecam()
                 end
             end
 
-            function _G.wipedFreecam.EnterCamera()
+            function _G.wipedFreecam.ToggleCamera()
                 if _G.wipedFreecam.isToggled then return end
                 _G.wipedFreecam.isToggled = true
 
@@ -1227,46 +1227,9 @@ local function EnableFreecam()
                     end
                 end)
             end
-
-            function _G.wipedFreecam.ExitCamera()
-                if not _G.wipedFreecam.isToggled then return end
-                _G.wipedFreecam.isToggled = false
-                if _G.wipedFreecam.camera then
-                    g(nativeNames.SetCamActive)(_G.wipedFreecam.camera, false)
-                    g(nativeNames.RenderScriptCams)(false, true, 500, false, false)
-                    g(nativeNames.DestroyCam)(_G.wipedFreecam.camera)
-                    _G.wipedFreecam.camera = nil
-                end
-                if _G.rcCarControlActive then
-                    if _G.rcCameraControl ~= nil then
-                        g(nativeNames.RenderScriptCams)(false, true, 1000, true, true)
-                        g(nativeNames.DestroyCam)(_G.rcCameraControl, false)
-                        _G.rcCameraControl = nil
-                    end
-                    _G.rcCarControlActive = false
-                    _G.rcCarControl = nil
-                end
-                g(nativeNames.SetFocusEntity)(g(nativeNames.PlayerPedId)())
-                g(nativeNames.EnableControlAction)(0, 14, true)
-                g(nativeNames.EnableControlAction)(0, 15, true)
-                g(nativeNames.EnableControlAction)(0, 16, true)
-                g(nativeNames.EnableControlAction)(0, 17, true)
-            end
         end
 
-        -- H key (74) listener — only enters/exits cam, never auto-activates
-        g(nativeNames.CreateThread)(function()
-            while _G.wipedFreecam and not _G.wipedFreecam.shutdown do
-                wait(0)
-                if g(nativeNames.IsDisabledControlJustPressed)(0, 74) then
-                    if _G.wipedFreecam.isToggled then
-                        _G.wipedFreecam.ExitCamera()
-                    else
-                        _G.wipedFreecam.EnterCamera()
-                    end
-                end
-            end
-        end)
+        _G.wipedFreecam.ToggleCamera()
     ]], leftControl, rightControl, freecamSpeedValue)
 
     MachoInjectResource(GetFreecamResource(), code)
@@ -1276,30 +1239,28 @@ local function DisableFreecam()
     MachoInjectResource(GetFreecamResource(), [[
         if _G.wipedFreecam then
             _G.wipedFreecam.shutdown = true
-            if _G.wipedFreecam.ExitCamera then
-                _G.wipedFreecam.ExitCamera()
-            else
-                if _G.wipedFreecam.camera then
-                    SetCamActive(_G.wipedFreecam.camera, false)
-                    RenderScriptCams(false, true, 500, false, false)
-                    DestroyCam(_G.wipedFreecam.camera)
-                    _G.wipedFreecam.camera = nil
-                end
-                if _G.rcCarControlActive then
-                    if _G.rcCameraControl ~= nil then
-                        RenderScriptCams(false, true, 1000, true, true)
-                        DestroyCam(_G.rcCameraControl, false)
-                        _G.rcCameraControl = nil
-                    end
-                    _G.rcCarControlActive = false
-                    _G.rcCarControl = nil
-                end
-                SetFocusEntity(PlayerPedId())
-                EnableControlAction(0, 14, true)
-                EnableControlAction(0, 15, true)
-                EnableControlAction(0, 16, true)
-                EnableControlAction(0, 17, true)
+            _G.wipedFreecam.isToggled = false
+            _G.wipedFreecam.cameraReady = false
+            if _G.wipedFreecam.camera then
+                SetCamActive(_G.wipedFreecam.camera, false)
+                RenderScriptCams(false, true, 500, false, false)
+                DestroyCam(_G.wipedFreecam.camera)
+                _G.wipedFreecam.camera = nil
             end
+            if _G.rcCarControlActive then
+                if _G.rcCameraControl ~= nil then
+                    RenderScriptCams(false, true, 1000, true, true)
+                    DestroyCam(_G.rcCameraControl, false)
+                    _G.rcCameraControl = nil
+                end
+                _G.rcCarControlActive = false
+                _G.rcCarControl = nil
+            end
+            SetFocusEntity(PlayerPedId())
+            EnableControlAction(0, 14, true)
+            EnableControlAction(0, 15, true)
+            EnableControlAction(0, 16, true)
+            EnableControlAction(0, 17, true)
             CreateThread(function()
                 Wait(100)
                 _G.wipedFreecam = nil
