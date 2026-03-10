@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blossom.Lua</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent;
+            color: #fff;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Intro Overlay */
+        .intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 0;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        .intro-overlay.show {
+            opacity: 1;
+        }
+
+        .intro-overlay.hidden {
+            opacity: 0;
+        }
+
+        .intro-gif {
+            max-width: 50%;
+            max-height: 50%;
+            object-fit: contain;
+            margin-top: -5%;
+        }
+
+        .menu-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            gap: 0;
+            filter: drop-shadow(0 10px 40px rgba(0, 0, 0, 0.5));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .menu-wrapper.visible {
+            opacity: 1;
+        }
+
+        /* Tab Sidebar */
+        .tab-sidebar {
+            width: 220px;
+            background: linear-gradient(180deg, rgb(25, 20, 30), rgb(35, 25, 40));
+            border-radius: 12px 0 0 12px;
+            border: 1px solid rgba(255, 182, 193, 0.4);
+            border-right: none;
+            padding: 20px 0;
+        }
+
+        .menu-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 182, 193, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .menu-logo h1 {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffb6c1, #ff69b4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+        }
+
+        .menu-logo img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .tab-item {
+            padding: 15px 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.6);
+            position: relative;
+        }
+
+        .tab-item:hover {
+            background: rgba(255, 182, 193, 0.15);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .tab-item.active {
+            background: rgba(255, 182, 193, 0.25);
+            border-left-color: #ffb6c1;
+            color: #fff;
+        }
+
+        .tab-item.active::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 8px 0 8px 8px;
+            border-color: transparent transparent transparent rgb(40, 30, 45);
+        }
+
+        /* Content Panel */
+        .content-panel {
+            width: 550px;
+            background: linear-gradient(180deg, rgb(30, 25, 35), rgb(40, 30, 45));
+            border-radius: 0 12px 12px 0;
+            border: 1px solid rgba(255, 182, 193, 0.4);
+            border-left: none;
+            display: flex;
+            flex-direction: column;
+            max-height: 650px;
+        }
+
+        .content-header {
+            padding: 25px;
+            border-bottom: 1px solid rgba(255, 182, 193, 0.3);
+            background: linear-gradient(135deg, rgba(255, 182, 193, 0.15), rgba(255, 105, 180, 0.15));
+        }
+
+        .content-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .content-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .content-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .content-body::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        .content-body::-webkit-scrollbar-thumb {
+            background: rgba(255, 182, 193, 0.6);
+            border-radius: 4px;
+        }
+
+        .content-body::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 182, 193, 0.8);
+        }
+
+        /* Grid Layout */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .grid-item {
+            background: rgba(255, 182, 193, 0.1);
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 182, 193, 0.25);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 500;
+            scroll-margin-top: 10px;
+            scroll-margin-bottom: 10px;
+        }
+
+        .grid-item:hover {
+            background: rgba(255, 182, 193, 0.2);
+            border-color: rgba(255, 182, 193, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .grid-item.selected {
+            background: linear-gradient(135deg, rgba(255, 182, 193, 0.35), rgba(255, 105, 180, 0.35));
+            border-color: #ffb6c1;
+            box-shadow: 0 0 15px rgba(255, 182, 193, 0.5);
+        }
+
+        /* List Layout */
+        .list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .list-item {
+            background: rgba(255, 182, 193, 0.1);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 182, 193, 0.25);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            scroll-margin-top: 10px;
+            scroll-margin-bottom: 10px;
+        }
+
+        .list-item:hover {
+            background: rgba(255, 182, 193, 0.2);
+            border-color: rgba(255, 182, 193, 0.5);
+            transform: translateX(5px);
+        }
+
+        .list-item.selected {
+            background: linear-gradient(135deg, rgba(255, 182, 193, 0.35), rgba(255, 105, 180, 0.35));
+            border-color: #ffb6c1;
+            box-shadow: 0 0 15px rgba(255, 182, 193, 0.5);
+        }
+
+        .resource-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .resource-status.started {
+            background: rgba(0, 0, 0, 0.6);
+            color: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.8);
+        }
+
+        .resource-status.stopped {
+            background: rgba(0, 0, 0, 0.6);
+            color: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.8);
+        }
+
+        /* Form Layout */
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .form-input {
+            background: rgba(255, 182, 193, 0.1);
+            border: 1px solid rgba(255, 182, 193, 0.35);
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .form-input:focus {
+            background: rgba(255, 182, 193, 0.15);
+            border-color: #ffb6c1;
+            box-shadow: 0 0 0 3px rgba(255, 182, 193, 0.25);
+        }
+
+        .form-input.typing {
+            border-color: #ff69b4;
+            box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.3);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 5px rgba(255, 105, 180, 0.4);
+            }
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .form-button {
+            background: linear-gradient(135deg, #ffb6c1, #ff69b4);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .form-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 182, 193, 0.5);
+        }
+
+        .form-button.selected {
+            box-shadow: 0 0 20px rgba(255, 182, 193, 0.7);
+            animation: buttonPulse 1s infinite;
+        }
+
+        @keyframes buttonPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .empty-state-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 15px;
+            opacity: 0.5;
+        }
+        
+        .empty-state-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .empty-state-text {
+            font-size: 13px;
+        }
+
+        /* Controls Hint */
+        .controls-hint {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-top: 1px solid rgba(255, 182, 193, 0.3);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            text-align: center;
+        }
+
+        .controls-hint span {
+            display: inline-block;
+            background: rgba(255, 182, 193, 0.25);
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin: 0 3px;
+            color: #ffb6c1;
+            font-weight: 600;
+        }
+
+        .controls-hint.typing-mode {
+            background: rgba(255, 105, 180, 0.25);
+            border-top-color: rgba(255, 105, 180, 0.4);
+        }
+
+        .controls-hint.typing-mode span {
+            background: rgba(255, 105, 180, 0.35);
+            color: #ff69b4;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .status-badge.on {
+            background: rgba(0, 0, 0, 0.6);
+            color: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.8);
+        }
+
+        .status-badge.off {
+            background: rgba(0, 0, 0, 0.6);
+            color: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.8);
+        }
+
+        /* Player Submenu */
+        .player-submenu {
+            margin-top: 10px;
+            padding: 15px;
+            background: rgba(255, 182, 193, 0.08);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 182, 193, 0.25);
+        }
+
+        .player-submenu-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #ffb6c1;
+            margin-bottom: 12px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 182, 193, 0.2);
+        }
+
+        .player-option {
+            background: rgba(255, 182, 193, 0.1);
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 182, 193, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            text-align: center;
+            scroll-margin-top: 20px;
+            scroll-margin-bottom: 20px;
+        }
+
+        .player-option:hover {
+            background: rgba(255, 182, 193, 0.2);
+            border-color: rgba(255, 182, 193, 0.4);
+            transform: translateX(3px);
+        }
+
+        .player-option.selected {
+            background: linear-gradient(135deg, rgba(255, 182, 193, 0.3), rgba(255, 105, 180, 0.3));
+            border-color: #ffb6c1;
+            box-shadow: 0 0 10px rgba(255, 182, 193, 0.4);
+        }
+
+        .list-item.has-submenu::after {
+            content: '›';
+            font-size: 18px;
+            color: #ffb6c1;
+            margin-left: 10px;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Intro Overlay -->
+    <div class="intro-overlay" id="introOverlay">
+        <img src="https://cdn.imgchest.com/files/aad2b32db106.gif" alt="Loading" class="intro-gif">
+    </div>
+
+    <div class="menu-wrapper" id="menuWrapper">
+        <div class="tab-sidebar">
+            <div class="menu-logo">
+                <h1>Blossom.Lua</h1>
+                <img src="https://i.ibb.co/23h3RGJ0/ab1309ecc60c68d25aa497888fe2e6ba.png" alt="Blossom Logo">
+            </div>
+            <div id="tab-list"></div>
+        </div>
+
+        <div class="content-panel">
+            <div class="content-header">
+                <h2 id="content-title">Select a tab</h2>
+            </div>
+            <div class="content-body" id="content-body">
+                <div class="empty-state">
+                    <div class="empty-state-icon"><img src="https://cdn.imgchest.com/files/d7d0d21e8b3d.gif" alt="Flower"></div>
+                    <div class="empty-state-text">Use arrow keys to navigate tabs</div>
+                </div>
+            </div>
+            <div class="controls-hint" id="controlsHint">
+                <span>↑↓</span> Navigate • <span>Enter</span> Select • <span>Backspace</span> Back • <span>Delete</span> Close
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let menuState = null;
+        let isVisible = false;
+
+        // Play intro animation on load
+        window.addEventListener('load', () => {
+            showIntroOverlay();
+        });
+
+        // Function to show intro overlay
+        function showIntroOverlay() {
+            const introOverlay = document.getElementById('introOverlay');
+            const introGif = introOverlay.querySelector('.intro-gif');
+            
+            if (introOverlay && introGif) {
+                // Force GIF to reload by changing its src
+                const gifSrc = introGif.src;
+                introGif.src = '';
+                introGif.src = gifSrc;
+                
+                introOverlay.classList.remove('hidden');
+                introOverlay.classList.add('show');
+                
+                // Hide intro after 3 seconds
+                setTimeout(() => {
+                    introOverlay.classList.add('hidden');
+                    introOverlay.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // Core rendering functions
+        function renderTabs() {
+            if (!menuState || !menuState.tabs) return;
+
+            const tabList = document.getElementById('tab-list');
+            tabList.innerHTML = '';
+
+            menuState.tabs.forEach((tab, index) => {
+                const tabElement = document.createElement('div');
+                tabElement.className = 'tab-item';
+                if (index === menuState.activeTab) {
+                    tabElement.classList.add('active');
+                }
+                tabElement.textContent = tab.title || `Tab ${index + 1}`;
+                tabList.appendChild(tabElement);
+            });
+        }
+
+        function renderContent() {
+            if (!menuState || !menuState.tabs) return;
+
+            const currentTab = menuState.tabs[menuState.activeTab];
+            if (!currentTab) return;
+
+            const contentTitle = document.getElementById('content-title');
+            const contentBody = document.getElementById('content-body');
+            const controlsHint = document.getElementById('controlsHint');
+
+            contentTitle.textContent = currentTab.header || currentTab.title || 'Content';
+
+            // Update controls hint based on state
+            if (menuState.isTyping) {
+                controlsHint.innerHTML = '<span>Typing Mode</span> • <span>Enter</span> Finish • <span>Esc</span> Cancel • <span>Ctrl+V</span> Paste • <span>Ctrl+C</span> Copy';
+                controlsHint.classList.add('typing-mode');
+            } else if (menuState.isContentPanelOpen) {
+                controlsHint.innerHTML = '<span>↑↓</span> Navigate • <span>Enter</span> Select • <span>Backspace</span> Back • <span>Delete</span> Close';
+                controlsHint.classList.remove('typing-mode');
+            } else {
+                controlsHint.innerHTML = '<span>↑↓</span> Switch Tab • <span>Enter</span> Open • <span>Delete</span> Close Menu';
+                controlsHint.classList.remove('typing-mode');
+            }
+
+            // Show empty state if content panel is not open
+            if (!menuState.isContentPanelOpen) {
+                contentBody.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><img src="https://cdn.imgchest.com/files/d7d0d21e8b3d.gif" alt="Flower"></div>
+                        <div class="empty-state-text">Press Enter to open this tab</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Show empty state if no items
+            if (!currentTab.items || currentTab.items.length === 0) {
+                contentBody.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><img src="https://cdn.imgchest.com/files/d7d0d21e8b3d.gif" alt="Flower"></div>
+                        <div class="empty-state-text">No items available</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render based on tab type
+            if (currentTab.type === 'grid') {
+                renderGridContent(currentTab, contentBody);
+            } else if (currentTab.type === 'list') {
+                renderListContent(currentTab, contentBody);
+            } else if (currentTab.type === 'form') {
+                renderFormContent(currentTab, contentBody);
+            }
+        }
+
+        function renderGridContent(tab, container) {
+            const gridContainer = document.createElement('div');
+            gridContainer.className = 'grid-container';
+
+            // Adjust grid columns based on cols property
+            if (tab.cols) {
+                gridContainer.style.gridTemplateColumns = `repeat(${tab.cols}, 1fr)`;
+            }
+
+            tab.items.forEach((item, index) => {
+                const gridItem = document.createElement('div');
+                gridItem.className = 'grid-item';
+                gridItem.setAttribute('data-index', index);
+                
+                if (index === menuState.selection.index) {
+                    gridItem.classList.add('selected');
+                }
+                gridItem.textContent = item.label || `Item ${index + 1}`;
+                gridContainer.appendChild(gridItem);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(gridContainer);
+        }
+
+        function renderListContent(tab, container) {
+            const listContainer = document.createElement('div');
+            listContainer.className = 'list-container';
+
+            tab.items.forEach((item, index) => {
+                const listItem = document.createElement('div');
+                listItem.className = 'list-item';
+                listItem.setAttribute('data-index', index);
+                
+                if (index === menuState.selection.index) {
+                    listItem.classList.add('selected');
+                }
+
+                // Add submenu indicator for players
+                if (item.hasOptions || item.showOptions) {
+                    listItem.classList.add('has-submenu');
+                }
+
+                const label = document.createElement('span');
+                label.textContent = item.label || `Item ${index + 1}`;
+                listItem.appendChild(label);
+
+                if (item.state) {
+                    const status = document.createElement('span');
+                    status.className = `resource-status ${item.state}`;
+                    status.textContent = item.state;
+                    listItem.appendChild(status);
+                }
+
+                listContainer.appendChild(listItem);
+
+                // Render player options submenu if showOptions is true
+                if (item.showOptions && index === menuState.selection.index) {
+                    const submenuDiv = document.createElement('div');
+                    submenuDiv.className = 'player-submenu';
+
+                    const submenuTitle = document.createElement('div');
+                    submenuTitle.className = 'player-submenu-title';
+                    submenuTitle.textContent = '▼ Player Options ▼';
+                    submenuDiv.appendChild(submenuTitle);
+
+                    const playerOptions = [
+                        'Teleport to Player',
+                        'Bring Player to You',
+                        'Give Weapon',
+                        'Heal Player',
+                        'Kill Player',
+                        'Freeze Player',
+                        'Spectate Player',
+                        'Explode Player',
+                        'Kick Player',
+                        'Ban Player'
+                    ];
+
+                    playerOptions.forEach((optionLabel, optionIndex) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'player-option';
+                        optionDiv.setAttribute('data-option-index', optionIndex);
+                        
+                        if (item.selectedOption === optionIndex) {
+                            optionDiv.classList.add('selected');
+                        }
+                        optionDiv.textContent = optionLabel;
+                        submenuDiv.appendChild(optionDiv);
+                    });
+
+                    listContainer.appendChild(submenuDiv);
+                }
+            });
+
+            container.innerHTML = '';
+            container.appendChild(listContainer);
+        }
+
+        function renderFormContent(tab, container) {
+            const formContainer = document.createElement('div');
+            formContainer.className = 'form-container';
+
+            tab.items.forEach((item, index) => {
+                const formItem = document.createElement('div');
+                formItem.className = 'form-item';
+
+                if (item.type === 'input') {
+                    const label = document.createElement('div');
+                    label.className = 'form-label';
+                    label.textContent = item.label || 'Input';
+
+                    const input = document.createElement('input');
+                    input.className = 'form-input';
+                    input.type = 'text';
+                    input.value = item.value || '';
+                    input.placeholder = item.placeholder || '';
+                    input.readOnly = true;
+
+                    // Visual feedback for typing mode
+                    if (menuState.isTyping && index === menuState.selection.index) {
+                        input.classList.add('typing');
+                    }
+
+                    // Visual feedback for selection
+                    if (index === menuState.selection.index && !menuState.isTyping) {
+                        input.style.borderColor = '#ffb6c1';
+                        input.style.boxShadow = '0 0 0 3px rgba(255, 182, 193, 0.35)';
+                    }
+
+                    formItem.appendChild(label);
+                    formItem.appendChild(input);
+                } else if (item.type === 'button') {
+                    const button = document.createElement('button');
+                    button.className = 'form-button';
+                    if (index === menuState.selection.index) {
+                        button.classList.add('selected');
+                    }
+                    
+                    // Add status badge if item has state
+                    let buttonText = item.label || 'Button';
+                    if (item.state) {
+                        buttonText += ` <span class="status-badge ${item.state}">${item.state.toUpperCase()}</span>`;
+                    }
+                    button.innerHTML = buttonText;
+                    
+                    formItem.appendChild(button);
+                } else if (item.type === 'label') {
+                    const labelDiv = document.createElement('div');
+                    labelDiv.style.cssText = 'padding: 12px; background: rgba(255, 182, 193, 0.08); border-radius: 6px; font-size: 12px; color: rgba(255, 255, 255, 0.7); text-align: center; border: 1px solid rgba(255, 182, 193, 0.2);';
+                    labelDiv.textContent = item.label || 'Label';
+                    formItem.appendChild(labelDiv);
+                } else if (item.label) {
+                    // Resource or regular list item in form (like the resources tab)
+                    const listItem = document.createElement('div');
+                    listItem.className = 'list-item';
+                    if (index === menuState.selection.index) {
+                        listItem.classList.add('selected');
+                    }
+
+                    const label = document.createElement('span');
+                    label.textContent = item.label;
+                    listItem.appendChild(label);
+
+                    if (item.state) {
+                        const status = document.createElement('span');
+                        status.className = `resource-status ${item.state}`;
+                        status.textContent = item.state;
+                        listItem.appendChild(status);
+                    }
+
+                    formItem.appendChild(listItem);
+                }
+
+                formContainer.appendChild(formItem);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(formContainer);
+        }
+
+        function update() {
+            if (!menuState) return;
+            
+            renderTabs();
+            renderContent();
+
+            // Handle visibility
+            const menuWrapper = document.getElementById('menuWrapper');
+            if (isVisible) {
+                menuWrapper.classList.add('visible');
+            } else {
+                menuWrapper.classList.remove('visible');
+            }
+
+            // Enhanced auto-scroll for selected items
+            setTimeout(() => {
+                const contentBody = document.getElementById('content-body');
+                if (!contentBody) return;
+
+                // First try to find selected player option
+                let selectedElement = contentBody.querySelector('.player-option.selected');
+                
+                // If not in player options, find selected list item or other selected element
+                if (!selectedElement) {
+                    selectedElement = contentBody.querySelector('.list-item.selected, .grid-item.selected, .form-button.selected, .form-input[style*="border-color: #ffb6c1"]');
+                }
+
+                if (selectedElement) {
+                    // Get the position of the element relative to the scrollable container
+                    const elementRect = selectedElement.getBoundingClientRect();
+                    const containerRect = contentBody.getBoundingClientRect();
+                    
+                    // Calculate if element is out of view
+                    const isAboveView = elementRect.top < containerRect.top;
+                    const isBelowView = elementRect.bottom > containerRect.bottom;
+                    
+                    if (isAboveView || isBelowView) {
+                        // Scroll the element into view
+                        selectedElement.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'nearest',
+                            inline: 'nearest'
+                        });
+                    }
+                }
+            }, 50);
+        }
+
+        // Message handler for receiving updates from Lua
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+
+            if (data.action === 'update' && data.data) {
+                menuState = data.data;
+                isVisible = true;
+                update();
+            } else if (data.action === 'show') {
+                isVisible = true;
+                showIntroOverlay(); // Show the intro overlay when menu is opened
+                update();
+            } else if (data.action === 'hide') {
+                isVisible = false;
+                update();
+            }
+        });
+
+        // Initial render
+        update();
+    </script>
+</body>
+</html>
