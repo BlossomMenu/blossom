@@ -1,7 +1,7 @@
 MachoLockLogger(1)
 isAuthenticated = false
 
-local xStormox_secret = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822fds5d6c15b0f00a08"
+local xStormox_secret = ""
 
 local bit = bit or bit32
 if not bit then
